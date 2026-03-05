@@ -57,11 +57,11 @@ ml-recommendations-api/
 
 ## Persistence
 
-- Model artifact: `.keras` file in `MODEL_PATH`.
-- Encoding context: `encoding-context.json`.
+- Model artifact: `.keras` object stored in MinIO bucket.
+- Encoding context: `encoding-context.json` object stored in MinIO bucket.
 - User/book embeddings: Qdrant collections (`users`, `books`).
 - Model artifact is not stored in Qdrant.
-- MinIO is available in the stack for future artifact migration.
+- MinIO is mandatory for model/context persistence in runtime flow.
 
 ## Acceptance Criteria
 

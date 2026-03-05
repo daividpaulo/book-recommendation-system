@@ -48,6 +48,19 @@ docker compose up --build
 - Recommendations: `GET /api/v1/recommendations/{userId}`
 - Manual training trigger: `POST /api/v1/recommendations/train`
 
+## MinIO artifact layout
+
+ML artifacts are stored in MinIO bucket `ml-models`:
+
+- `book-recommendation.keras`: trained TensorFlow model.
+- `encoding-context.json`: encoding context used by training and inference.
+
+Runtime behavior:
+
+- `POST /api/v1/recommendations/train` writes/overwrites both objects.
+- `POST /recommend` in `ml-recommendations-api` loads model/context from MinIO.
+- If MinIO is unavailable, ML service startup/training fails (mandatory dependency).
+
 ## C4 Model (GitHub-renderable)
 
 ### Container Diagram
@@ -56,27 +69,25 @@ docker compose up --build
 flowchart LR
     U["👤 Person<br/>User"]
 
-    subgraph UI_SYS["System Boundary<br/>recommendations-ui app"]
+    subgraph UI_SYS
       direction TB
-      UI["Container<br/>recommendations-ui<br/>Node.js + HTML + Bootstrap"]
-      UI_DB[("ContainerDb<br/>Browser Local State")]
-      UI -.->|stores transient ui state| UI_DB
+      UI["recommendations-ui<br/>Node.js + HTML + Bootstrap"]
     end
 
-    subgraph API_SYS["System Boundary<br/>recommendations-api app"]
+    subgraph API_SYS
       direction TB
-      API["Container<br/>recommendations-api<br/>Go HTTP API"]
-      PG[("ContainerDb<br/>PostgreSQL<br/>Users, Books, Purchases")]
+      API["recommendations-api<br/>Go HTTP API"]
+      PG[("PostgreSQL<br/>Users, Books, Purchases")]
       API -->|CRUD + orchestration| PG
     end
 
-    subgraph ML_SYS["System Boundary<br/>ml-recommendations-api app"]
+    subgraph ML_SYS
       direction TB
-      ML["Container<br/>ml-recommendations-api<br/>FastAPI + TensorFlow"]
-      QD[("ContainerDb<br/>Qdrant<br/>Embeddings Index")]
-      MI[("ContainerDb<br/>MinIO<br/>Object Storage Simulation")]
+      ML["ml-recommendations-api<br/>FastAPI + TensorFlow"]
+      QD[("Qdrant<br/>Embeddings Index")]
+      MI[("MinIO<br/>Model & Context Artifacts")]
       ML -->|read/write vectors| QD
-      ML -.->|optional artifact backend| MI
+      ML -->|save/load model + context| MI
     end
 
     U -->|uses| UI
@@ -89,7 +100,7 @@ flowchart LR
 
     class U person;
     class UI,API,ML container;
-    class UI_DB,PG,QD,MI database;
+    class PG,QD,MI database;
 
     style UI_SYS fill:transparent,stroke:#9CA3AF,stroke-width:1.5px
     style API_SYS fill:transparent,stroke:#9CA3AF,stroke-width:1.5px
@@ -101,14 +112,14 @@ flowchart LR
 - Recommendations API persists books, users, and purchases in PostgreSQL.
 - ML Recommendations API follows a clean-architecture-inspired structure.
 - Initial user/book/purchase seed is loaded from `db/init/002_seed.sql`.
-- Encoding context is persisted in `ml-recommendations-api/saved_models/encoding-context.json`.
+- Encoding context and model are persisted in MinIO bucket (`ml-models`).
 - Training is manual through `POST /api/v1/recommendations/train`.
 - Recommendation flow has two stages:
   1. Qdrant retrieves ANN candidates by vector similarity.
   2. TensorFlow re-ranks candidates with `model.predict` using age and purchase-enriched profile signals.
 - On vector dimension mismatch, embeddings are reindexed (resaved) before retrying recommendation.
 - UI renders recommendations as cards with score percentage.
-- MinIO is included to simulate production-like artifact storage.
+- MinIO is required and used as the active model artifact backend.
 - Healthchecks are chained across `postgres -> ml-recommendations-api -> recommendations-api -> recommendations-ui`.
 
 > This bootstrap is a starting point for iterative evolution under SDD.

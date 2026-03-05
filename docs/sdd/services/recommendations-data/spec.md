@@ -21,8 +21,8 @@
 
 ## ML Persistence Strategy
 
-- Current PoC: model/context persisted in local `ml-recommendations-api` volume.
-- Evolution-ready: MinIO available for model artifact version migration.
+- Current baseline: model/context persisted in MinIO bucket as mandatory backend.
+- ML service startup requires MinIO readiness.
 - Qdrant remains exclusive to user/book embeddings and vector search.
 
 ## Acceptance Criteria

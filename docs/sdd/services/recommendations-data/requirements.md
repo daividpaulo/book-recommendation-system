@@ -10,7 +10,7 @@ Data platform infrastructure with PostgreSQL, Qdrant, and MinIO.
 - `REQ-DATA-002`: Load local seed data for bootstrap.
 - `REQ-DATA-003`: Provision Qdrant for vector persistence/search.
 - `REQ-DATA-004`: Expose Qdrant dashboard locally.
-- `REQ-DATA-005`: Provision MinIO for model artifact storage simulation.
+- `REQ-DATA-005`: Provision MinIO for mandatory ML model/context artifact persistence.
 - `REQ-DATA-006`: Expose MinIO console locally for bucket/object inspection.
 
 ## Non-Functional Requirements
@@ -18,4 +18,4 @@ Data platform infrastructure with PostgreSQL, Qdrant, and MinIO.
 - `NFR-DATA-001`: Use Docker volumes for persistence.
 - `NFR-DATA-002`: Keep relational DB healthcheck enabled.
 - `NFR-DATA-003`: Application services must depend on data platform readiness.
-- `NFR-DATA-004`: In PoC mode, MinIO startup can use `service_started` dependency.
+- `NFR-DATA-004`: ML service must depend on MinIO readiness before startup.

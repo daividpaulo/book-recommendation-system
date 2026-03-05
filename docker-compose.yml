@@ -76,14 +76,11 @@ services:
       PORT: 5000
       QDRANT_HOST: qdrant
       QDRANT_PORT: 6333
-      MODEL_PATH: /app/saved_models
-      MODEL_STORAGE_STRATEGY: local-volume
+      MODEL_PATH: /tmp/saved_models
       MINIO_ENDPOINT: http://minio:9000
       MINIO_ACCESS_KEY: minioadmin
       MINIO_SECRET_KEY: minioadmin
       MINIO_BUCKET: ml-models
-    volumes:
-      - ml_models:/app/saved_models
     depends_on:
       qdrant:
         condition: service_started
@@ -118,7 +115,6 @@ services:
 volumes:
   postgres_data:
   qdrant_data:
-  ml_models:
   minio_data:
 
 networks:

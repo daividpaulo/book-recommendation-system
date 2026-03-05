@@ -17,10 +17,10 @@ Train recommendation model using registered users and books.
 - `REQ-FTRN-003`: Trained model is persisted for future inference.
 - `REQ-FTRN-004`: Training response includes execution metadata.
 - `REQ-FTRN-005`: Training remains manual in this phase (operator-triggered).
-- `REQ-FTRN-006`: Artifact persistence strategy allows migration from local volume to object storage without contract changes.
+- `REQ-FTRN-006`: Trained model and encoding context must be persisted in MinIO.
 - `REQ-FTRN-007`: Training payload must include purchase-derived profile fields (`purchase_count`, `purchased_book_ids`).
 
 ## Acceptance
 
 - `POST /api/v1/recommendations/train` returns success with `trained=true` when there is valid training data.
-- Model persists across `ml-recommendations-api` container restarts (volume).
+- Model persists across `ml-recommendations-api` container restarts via MinIO object storage.

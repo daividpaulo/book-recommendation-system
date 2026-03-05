@@ -131,6 +131,9 @@ func (r *Repository) ListPurchases(ctx context.Context) ([]entities.Purchase, er
 		}
 		purchases = append(purchases, purchase)
 	}
+	if purchases == nil {
+		return []entities.Purchase{}, nil
+	}
 	return purchases, nil
 }
 
@@ -155,6 +158,9 @@ func (r *Repository) ListPurchasesByUser(ctx context.Context, userID string) ([]
 			return nil, err
 		}
 		purchases = append(purchases, purchase)
+	}
+	if purchases == nil {
+		return []entities.Purchase{}, nil
 	}
 	return purchases, nil
 }

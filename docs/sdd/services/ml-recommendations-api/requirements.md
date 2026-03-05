@@ -20,7 +20,7 @@ Embedding, training, and inference service for book recommendations.
 - `REQ-ML-005`: Persist trained model and encoding context.
 - `REQ-ML-006`: Generate recommendations via `POST /recommend`.
 - `REQ-ML-007`: Support manual training as the default PoC flow.
-- `REQ-ML-008`: Support configurable model storage strategy (`local-volume`, future `minio`).
+- `REQ-ML-008`: Persist model artifact and encoding context in MinIO as mandatory storage backend.
 - `REQ-ML-009`: Recommendation scoring must consider age and purchase-derived profile signals after training.
 
 ## Architecture Requirements (Clean Architecture)
@@ -35,8 +35,8 @@ Embedding, training, and inference service for book recommendations.
 
 ## Non-Functional Requirements
 
-- `NFR-ML-001`: Persist model in `MODEL_PATH` for PoC operation.
+- `NFR-ML-001`: Persist model/context in MinIO and fail fast when MinIO is unavailable.
 - `NFR-ML-002`: Inference failures return HTTP errors without process termination.
 - `NFR-ML-003`: CPU-only operation is supported.
 - `NFR-ML-004`: Ensure per-layer testability (unit tests in `application`, integration tests in `api`/`infrastructure`).
-- `NFR-ML-005`: Keep local operational simplicity in Docker Compose without external mandatory dependencies.
+- `NFR-ML-005`: MinIO is a required dependency in Docker Compose for ML service startup.

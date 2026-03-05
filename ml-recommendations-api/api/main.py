@@ -3,7 +3,15 @@ from __future__ import annotations
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 
-from config import MODEL_PATH, QDRANT_HOST, QDRANT_PORT
+from config import (
+    MINIO_ACCESS_KEY,
+    MINIO_BUCKET,
+    MINIO_ENDPOINT,
+    MINIO_SECRET_KEY,
+    MODEL_PATH,
+    QDRANT_HOST,
+    QDRANT_PORT,
+)
 from src.application.embed_book import EmbedBookUseCase
 from src.application.embed_user import EmbedUserUseCase
 from src.application.recommend import RecommendUseCase
@@ -47,7 +55,13 @@ class RecommendRequest(BaseModel):
 app = FastAPI(title="ml-recommendations-api")
 
 encoder = TensorFlowEncoder()
-model_repository = TensorFlowModelRepository(path=MODEL_PATH)
+model_repository = TensorFlowModelRepository(
+    path=MODEL_PATH,
+    minio_endpoint=MINIO_ENDPOINT,
+    minio_access_key=MINIO_ACCESS_KEY,
+    minio_secret_key=MINIO_SECRET_KEY,
+    minio_bucket=MINIO_BUCKET,
+)
 vector_store = QdrantStore(host=QDRANT_HOST, port=QDRANT_PORT)
 
 train_usecase = TrainModelUseCase(encoder=encoder, model_repository=model_repository)
