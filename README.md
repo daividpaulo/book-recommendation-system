@@ -50,35 +50,50 @@ docker compose up --build
 
 ## C4 Model (GitHub-renderable)
 
-### C4 Level 1 - System Context
+### Container Diagram
 
 ```mermaid
 flowchart LR
-    U[User]
-    S[Book Recommendation System]
-    U -->|Manage users, books, purchases\nTrain model and view recommendations| S
-```
+    U["👤 Person<br/>User"]
 
-### C4 Level 2 - Container Diagram
+    subgraph UI_SYS["System Boundary<br/>recommendations-ui app"]
+      direction TB
+      UI["Container<br/>recommendations-ui<br/>Node.js + HTML + Bootstrap"]
+      UI_DB[("ContainerDb<br/>Browser Local State")]
+      UI -.->|stores transient ui state| UI_DB
+    end
 
-```mermaid
-flowchart LR
-    U[User Browser]
-    UI[recommendations-ui\nNode.js + HTML + Bootstrap]
-    API[recommendations-api\nGo HTTP API]
-    ML[ml-recommendations-api\nFastAPI + TensorFlow]
-    PG[(PostgreSQL)]
-    QD[(Qdrant)]
-    MO[(Model artifacts volume)]
-    MI[(MinIO)]
+    subgraph API_SYS["System Boundary<br/>recommendations-api app"]
+      direction TB
+      API["Container<br/>recommendations-api<br/>Go HTTP API"]
+      PG[("ContainerDb<br/>PostgreSQL<br/>Users, Books, Purchases")]
+      API -->|CRUD + orchestration| PG
+    end
 
-    U --> UI
-    UI -->|REST| API
-    API -->|CRUD users/books/purchases| PG
-    API -->|/train and /recommend| ML
-    ML -->|Read/write vectors| QD
-    ML -->|Save/load .keras + context| MO
-    MI -. optional future artifact storage .-> ML
+    subgraph ML_SYS["System Boundary<br/>ml-recommendations-api app"]
+      direction TB
+      ML["Container<br/>ml-recommendations-api<br/>FastAPI + TensorFlow"]
+      QD[("ContainerDb<br/>Qdrant<br/>Embeddings Index")]
+      MI[("ContainerDb<br/>MinIO<br/>Object Storage Simulation")]
+      ML -->|read/write vectors| QD
+      ML -.->|optional artifact backend| MI
+    end
+
+    U -->|uses| UI
+    UI -->|HTTP/JSON| API
+    API -->|train/recommend orchestration| ML
+
+    classDef person fill:#08427B,color:#FFFFFF,stroke:#052E56,stroke-width:1.5px;
+    classDef container fill:#438DD5,color:#FFFFFF,stroke:#2E6295,stroke-width:1.5px;
+    classDef database fill:#2E6295,color:#FFFFFF,stroke:#1B4F72,stroke-width:1.5px;
+
+    class U person;
+    class UI,API,ML container;
+    class UI_DB,PG,QD,MI database;
+
+    style UI_SYS fill:transparent,stroke:#9CA3AF,stroke-width:1.5px
+    style API_SYS fill:transparent,stroke:#9CA3AF,stroke-width:1.5px
+    style ML_SYS fill:transparent,stroke:#9CA3AF,stroke-width:1.5px
 ```
 
 ### Current bootstrap status
