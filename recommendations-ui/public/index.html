@@ -1,0 +1,504 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Recommendations UI</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body class="bg-light">
+  <nav class="navbar navbar-expand-lg bg-white border-bottom sticky-top">
+    <div class="container">
+      <span class="navbar-brand">Recommendations UI</span>
+      <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+        <li class="nav-item"><button class="btn btn-link nav-link" onclick="showView('home')">Home</button></li>
+        <li class="nav-item"><button class="btn btn-link nav-link" onclick="showView('create-user')">Create User</button></li>
+        <li class="nav-item"><button class="btn btn-link nav-link" onclick="showView('create-book')">Create Book</button></li>
+        <li class="nav-item"><button class="btn btn-link nav-link" onclick="showView('buy-book')">Buy Book</button></li>
+      </ul>
+      <div class="d-flex align-items-center gap-2">
+        <span class="text-muted small">Active user:</span>
+        <strong id="active-user-label" class="small">Not selected</strong>
+      </div>
+    </div>
+  </nav>
+
+  <main class="container py-4">
+    <div id="alert-box"></div>
+
+    <section id="view-home" class="d-none">
+      <div class="card shadow-sm">
+        <div class="card-body">
+          <h4 class="card-title">Recommendations</h4>
+          <p class="text-muted">Select an active user, run manual training, and fetch ranked recommendations.</p>
+          <div class="row g-2">
+            <div class="col-md-6">
+              <label class="form-label">Change active user</label>
+              <select id="active-user-select" class="form-select"></select>
+            </div>
+            <div class="col-md-6 d-flex align-items-end gap-2">
+              <button id="train-btn" class="btn btn-primary" onclick="trainModel()">Train Model</button>
+              <button id="recommend-btn" class="btn btn-success" onclick="loadRecommendations()">Get Recommendations</button>
+            </div>
+          </div>
+          <div id="training-feedback" class="mt-3"></div>
+        </div>
+      </div>
+
+      <div class="card mt-3 shadow-sm">
+        <div class="card-body">
+          <h5 class="mb-2">Why this recommendation is generated</h5>
+          <div id="user-features-panel" class="text-muted small">
+            Select an active user to view profile signals used by the model.
+          </div>
+        </div>
+      </div>
+
+      <div class="mt-3">
+        <div id="recommendation-meta" class="small text-muted mb-2"></div>
+        <h5 class="mb-3">Recommended Books</h5>
+        <div id="recommendations-cards" class="row g-3"></div>
+      </div>
+    </section>
+
+    <section id="view-create-user" class="d-none">
+      <div class="card shadow-sm">
+        <div class="card-body">
+          <h4 class="card-title">Create User</h4>
+          <div class="row g-2">
+            <div class="col-md-6"><input id="user-id" class="form-control" placeholder="id (optional)" /></div>
+            <div class="col-md-6"><input id="user-name" class="form-control" placeholder="name" /></div>
+            <div class="col-md-4"><input id="user-age" type="number" class="form-control" placeholder="age" /></div>
+            <div class="col-md-8"><input id="user-profession" class="form-control" placeholder="profession" /></div>
+            <div class="col-12"><input id="user-interests" class="form-control" placeholder="interest_areas (csv)" /></div>
+            <div class="col-12"><button class="btn btn-primary" onclick="createUser()">Save User</button></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="view-create-book" class="d-none">
+      <div class="card shadow-sm">
+        <div class="card-body">
+          <h4 class="card-title">Create Book</h4>
+          <div class="row g-2">
+            <div class="col-md-6"><input id="book-id" class="form-control" placeholder="id (optional)" /></div>
+            <div class="col-md-6"><input id="book-title" class="form-control" placeholder="title" /></div>
+            <div class="col-md-6"><input id="book-author" class="form-control" placeholder="author" /></div>
+            <div class="col-md-6"><input id="book-area" class="form-control" placeholder="area" /></div>
+            <div class="col-md-6"><input id="book-category" class="form-control" placeholder="category" /></div>
+            <div class="col-md-6"><input id="book-subject" class="form-control" placeholder="subject" /></div>
+            <div class="col-12"><textarea id="book-description" class="form-control" placeholder="description"></textarea></div>
+            <div class="col-12"><button class="btn btn-primary" onclick="createBook()">Save Book</button></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="view-buy-book" class="d-none">
+      <div class="card shadow-sm">
+        <div class="card-body">
+          <h4 class="card-title">Buy Book</h4>
+          <p class="text-muted">Register purchases to improve profile-based recommendations.</p>
+          <div class="row g-2">
+            <div class="col-md-6">
+              <label class="form-label">User</label>
+              <select id="buy-user-select" class="form-select"></select>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Book</label>
+              <select id="buy-book-select" class="form-select"></select>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">Quantity</label>
+              <input id="buy-quantity" type="number" class="form-control" min="1" value="1" />
+            </div>
+            <div class="col-12">
+              <button class="btn btn-primary" onclick="createPurchase()">Save Purchase</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <div class="modal fade" id="userSelectModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header"><h5 class="modal-title">Select User</h5></div>
+        <div class="modal-body">
+          <p class="text-muted">Choose the active user to start using recommendations.</p>
+          <select id="entry-user-select" class="form-select"></select>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-primary" onclick="confirmInitialUser()">Continue</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+    let users = [];
+    let books = [];
+    let activeUserId = "";
+    let userSelectModal = null;
+    let activeUserPurchases = [];
+
+    async function request(path, method = "GET", body) {
+      const resp = await fetch(`/proxy/${path}`, {
+        method,
+        headers: { "Content-Type": "application/json" },
+        body: body ? JSON.stringify(body) : undefined
+      });
+      const text = await resp.text();
+      const payload = (() => { try { return JSON.parse(text); } catch { return { raw: text }; } })();
+      if (!resp.ok) {
+        const message = payload?.error || payload?.detail || `Request failed (${resp.status})`;
+        throw new Error(message);
+      }
+      return payload;
+    }
+
+    function showAlert(message, variant = "success") {
+      const box = document.getElementById("alert-box");
+      box.innerHTML = `<div class="alert alert-${variant}" role="alert">${message}</div>`;
+      setTimeout(() => { box.innerHTML = ""; }, 4000);
+    }
+
+    function showView(view) {
+      document.getElementById("view-home").classList.add("d-none");
+      document.getElementById("view-create-user").classList.add("d-none");
+      document.getElementById("view-create-book").classList.add("d-none");
+      document.getElementById("view-buy-book").classList.add("d-none");
+      document.getElementById(`view-${view}`).classList.remove("d-none");
+    }
+
+    function syncUserSelects() {
+      const options = users.map((u) => `<option value="${u.id}">${u.name} (${u.id})</option>`).join("");
+      document.getElementById("entry-user-select").innerHTML = options;
+      document.getElementById("active-user-select").innerHTML = options;
+      document.getElementById("buy-user-select").innerHTML = options;
+      if (activeUserId) {
+        document.getElementById("entry-user-select").value = activeUserId;
+        document.getElementById("active-user-select").value = activeUserId;
+        document.getElementById("buy-user-select").value = activeUserId;
+      }
+    }
+
+    function syncBookSelect() {
+      const options = books.map((b) => `<option value="${b.id}">${b.title} (${b.id})</option>`).join("");
+      document.getElementById("buy-book-select").innerHTML = options;
+    }
+
+    function updateActiveUserLabel() {
+      const user = users.find((u) => u.id === activeUserId);
+      document.getElementById("active-user-label").textContent = user ? `${user.name} (${user.id})` : "Not selected";
+    }
+
+    function getBookById(bookId) {
+      return books.find((book) => book.id === bookId);
+    }
+
+    function renderUserFeaturesPanel() {
+      const panel = document.getElementById("user-features-panel");
+      const user = users.find((u) => u.id === activeUserId);
+      if (!user) {
+        panel.innerHTML = "Select an active user to view profile signals used by the model.";
+        return;
+      }
+
+      const purchasedBooks = activeUserPurchases.map((purchase) => getBookById(purchase.book_id)?.title || purchase.book_id);
+      const interests = (user.interest_areas || []).join(", ") || "none";
+      const purchaseCount = activeUserPurchases.reduce((sum, purchase) => sum + Number(purchase.quantity || 1), 0);
+      const purchaseSummary = purchasedBooks.length ? purchasedBooks.join(", ") : "none yet";
+
+      panel.innerHTML = `
+        <div class="row g-2">
+          <div class="col-md-3"><strong>Age:</strong> ${user.age ?? "-"}</div>
+          <div class="col-md-3"><strong>Profession:</strong> ${user.profession || "-"}</div>
+          <div class="col-md-6"><strong>Interests:</strong> ${interests}</div>
+          <div class="col-md-3"><strong>Purchases:</strong> ${purchaseCount}</div>
+          <div class="col-md-9"><strong>Purchased books:</strong> ${purchaseSummary}</div>
+        </div>
+        <div class="mt-2">
+          The model scores recommendations from this profile (age + interests + purchase behavior) and then ranks books by affinity.
+        </div>
+      `;
+    }
+
+    async function refreshActiveUserPurchases() {
+      if (!activeUserId) {
+        activeUserPurchases = [];
+        renderUserFeaturesPanel();
+        return;
+      }
+      try {
+        activeUserPurchases = await request(`api/v1/users/${activeUserId}/purchases`, "GET");
+      } catch (_) {
+        activeUserPurchases = [];
+      }
+      renderUserFeaturesPanel();
+    }
+
+    async function loadUsers() {
+      users = await request("api/v1/users", "GET");
+      syncUserSelects();
+      if (!users.length) {
+        showAlert("No users found. Create one first.", "warning");
+      }
+    }
+
+    async function loadBooks() {
+      books = await request("api/v1/books", "GET");
+      syncBookSelect();
+      if (!books.length) {
+        showAlert("No books found. Create one first.", "warning");
+      }
+    }
+
+    function renderRecommendationCards(recommendations) {
+      const container = document.getElementById("recommendations-cards");
+      if (!Array.isArray(recommendations) || !recommendations.length) {
+        container.innerHTML = `<div class="col-12"><div class="alert alert-secondary mb-0">No recommendations found for this user.</div></div>`;
+        document.getElementById("recommendation-meta").textContent = "No recommendation results available yet.";
+        return;
+      }
+
+      container.innerHTML = recommendations.map((item) => {
+        const pct = Math.max(0, Math.min(100, Number(item.score || 0) * 100));
+        const pctLabel = `${pct.toFixed(1)}%`;
+        const imageUrl = `https://picsum.photos/seed/${encodeURIComponent(item.book_id || item.title)}/480/270`;
+        const currentUser = users.find((u) => u.id === activeUserId);
+        const book = getBookById(item.book_id);
+        const userInterests = new Set(currentUser?.interest_areas || []);
+        const reasons = [];
+
+        if (book) {
+          if (book.area && userInterests.has(book.area)) reasons.push(`Matches your interest area: ${book.area}`);
+          if (book.category && userInterests.has(book.category)) reasons.push(`Matches preferred category: ${book.category}`);
+          if (book.subject && userInterests.has(book.subject)) reasons.push(`Matches preferred subject: ${book.subject}`);
+        }
+        if (activeUserPurchases.some((p) => p.book_id === item.book_id)) {
+          reasons.push("Already purchased before (high affinity signal)");
+        }
+        if (!reasons.length) {
+          reasons.push("Recommended by learned pattern from age and purchase profile");
+        }
+
+        const reasonMarkup = reasons.slice(0, 2).map((reason) => `<span class="badge text-bg-light border me-1 mb-1">${reason}</span>`).join("");
+        return `
+          <div class="col-md-6 col-lg-4">
+            <div class="card h-100 shadow-sm">
+              <img src="${imageUrl}" class="card-img-top" alt="Book cover placeholder">
+              <div class="card-body">
+                <h6 class="card-title mb-1">${item.title || "Untitled Book"}</h6>
+                <small class="text-muted d-block mb-3">${item.book_id || ""}</small>
+                <div class="d-flex justify-content-between mb-1">
+                  <span class="small text-muted">Recommendation score</span>
+                  <strong>${pctLabel}</strong>
+                </div>
+                <div class="progress" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${pct.toFixed(0)}">
+                  <div class="progress-bar" style="width: ${pct.toFixed(1)}%"></div>
+                </div>
+                <div class="mt-3">${reasonMarkup}</div>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join("");
+      const top = recommendations[0];
+      const topPct = Math.max(0, Math.min(100, Number(top.score || 0) * 100));
+      document.getElementById("recommendation-meta").textContent =
+        `Showing ${recommendations.length} recommendations for ${activeUserId}. Top match: ${top.title} (${topPct.toFixed(1)}%).`;
+    }
+
+    function renderRecommendationLoading() {
+      const container = document.getElementById("recommendations-cards");
+      document.getElementById("recommendation-meta").textContent = "Running recommendation scoring...";
+      container.innerHTML = `
+        <div class="col-12">
+          <div class="card shadow-sm">
+            <div class="card-body d-flex align-items-center gap-3">
+              <div class="spinner-border text-primary" role="status" aria-hidden="true"></div>
+              <div>
+                <div class="fw-semibold">Generating recommendations</div>
+                <div class="text-muted small">Scoring user profile against the catalog...</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    function confirmInitialUser() {
+      try {
+        const selected = document.getElementById("entry-user-select").value;
+        if (!selected) {
+          showAlert("Select a user to continue.", "warning");
+          return;
+        }
+        activeUserId = selected;
+        updateActiveUserLabel();
+        document.getElementById("active-user-select").value = selected;
+        document.getElementById("buy-user-select").value = selected;
+        refreshActiveUserPurchases();
+        showView("home");
+
+        if (userSelectModal && typeof userSelectModal.hide === "function") {
+          userSelectModal.hide();
+        } else {
+          const modalEl = document.getElementById("userSelectModal");
+          modalEl.classList.remove("show");
+          modalEl.style.display = "none";
+          document.body.classList.remove("modal-open");
+          document.querySelectorAll(".modal-backdrop").forEach((el) => el.remove());
+        }
+      } catch (err) {
+        showAlert(err.message, "danger");
+      }
+    }
+
+    async function createBook() {
+      try {
+        const payload = {
+          id: document.getElementById("book-id").value || undefined,
+          title: document.getElementById("book-title").value,
+          author: document.getElementById("book-author").value,
+          area: document.getElementById("book-area").value,
+          category: document.getElementById("book-category").value,
+          subject: document.getElementById("book-subject").value,
+          description: document.getElementById("book-description").value
+        };
+        const created = await request("api/v1/books", "POST", payload);
+        showAlert(`Book saved: ${created.title}`);
+        await loadBooks();
+      } catch (err) {
+        showAlert(err.message, "danger");
+      }
+    }
+
+    async function createUser() {
+      try {
+        const payload = {
+          id: document.getElementById("user-id").value || undefined,
+          name: document.getElementById("user-name").value,
+          age: Number(document.getElementById("user-age").value || 0),
+          profession: document.getElementById("user-profession").value,
+          interest_areas: document.getElementById("user-interests").value
+            .split(",")
+            .map((v) => v.trim())
+            .filter(Boolean)
+        };
+        const created = await request("api/v1/users", "POST", payload);
+        showAlert(`User saved: ${created.name}`);
+        await loadUsers();
+      } catch (err) {
+        showAlert(err.message, "danger");
+      }
+    }
+
+    async function createPurchase() {
+      try {
+        const payload = {
+          user_id: document.getElementById("buy-user-select").value || activeUserId,
+          book_id: document.getElementById("buy-book-select").value,
+          quantity: Number(document.getElementById("buy-quantity").value || 1)
+        };
+        const created = await request("api/v1/purchases", "POST", payload);
+        activeUserId = created.user_id;
+        syncUserSelects();
+        updateActiveUserLabel();
+        await refreshActiveUserPurchases();
+        showAlert("Purchase saved. Run training to include it in recommendations.");
+      } catch (err) {
+        showAlert(err.message, "danger");
+      }
+    }
+
+    async function trainModel() {
+      try {
+        const button = document.getElementById("train-btn");
+        button.disabled = true;
+        const startedAt = performance.now();
+        button.innerHTML = `<span class="spinner-border spinner-border-sm me-2" aria-hidden="true"></span>Training...`;
+        document.getElementById("training-feedback").innerHTML = `
+          <div class="alert alert-info mb-0">
+            Training in progress. We are updating profile patterns from age, interests, and purchases.
+          </div>
+        `;
+        const result = await request("api/v1/recommendations/train", "POST", {});
+        const elapsedMs = Math.round(performance.now() - startedAt);
+        document.getElementById("training-feedback").innerHTML = `
+          <div class="alert alert-success mb-0">
+            <div><strong>Training finished</strong> in ${(elapsedMs / 1000).toFixed(1)}s.</div>
+            <div class="small mt-1">Samples: ${result.samples ?? "-"} | Input dimensions: ${result.input_dim ?? "-"}</div>
+          </div>
+        `;
+        showAlert("Model trained successfully with current user profiles and purchases.");
+      } catch (err) {
+        showAlert(err.message, "danger");
+        document.getElementById("training-feedback").innerHTML = `
+          <div class="alert alert-danger mb-0">
+            Training failed: ${err.message}
+          </div>
+        `;
+      } finally {
+        const button = document.getElementById("train-btn");
+        button.disabled = false;
+        button.textContent = "Train Model";
+      }
+    }
+
+    async function loadRecommendations() {
+      try {
+        const button = document.getElementById("recommend-btn");
+        button.disabled = true;
+        activeUserId = document.getElementById("active-user-select").value || activeUserId;
+        updateActiveUserLabel();
+        if (!activeUserId) {
+          showAlert("Select an active user first.", "warning");
+          button.disabled = false;
+          return;
+        }
+        renderRecommendationLoading();
+        const data = await request(`api/v1/recommendations/${activeUserId}`, "GET");
+        renderRecommendationCards(data.recommendations || []);
+        showAlert("Recommendations updated.");
+      } catch (err) {
+        showAlert(err.message, "danger");
+      } finally {
+        document.getElementById("recommend-btn").disabled = false;
+      }
+    }
+
+    document.addEventListener("DOMContentLoaded", async () => {
+      const modalEl = document.getElementById("userSelectModal");
+      if (window.bootstrap && bootstrap.Modal) {
+        userSelectModal = new bootstrap.Modal(modalEl);
+      }
+      showView("home");
+      try {
+        await Promise.all([loadUsers(), loadBooks()]);
+      } catch (err) {
+        showAlert(err.message, "danger");
+      }
+      renderRecommendationCards([]);
+      if (userSelectModal && typeof userSelectModal.show === "function") {
+        userSelectModal.show();
+      } else {
+        modalEl.classList.add("show");
+        modalEl.style.display = "block";
+        document.body.classList.add("modal-open");
+      }
+
+      document.getElementById("active-user-select").addEventListener("change", (e) => {
+        activeUserId = e.target.value;
+        document.getElementById("buy-user-select").value = activeUserId;
+        updateActiveUserLabel();
+        refreshActiveUserPurchases();
+      });
+    });
+  </script>
+</body>
+</html>
